@@ -5,7 +5,7 @@
 \usepackage[top=1.2in]{geometry}
 \usepackage{abstract}
 \usepackage{setspace}
-\usepackage{enumerate}
+\usepackage{enumitem}
 \usepackage[nodayofweek]{datetime}
 \usepackage{cite}
 
@@ -14,6 +14,8 @@
 
 \newcommand\todo[1]{\textcolor{blue}{#1}}
 \newcommand\placeholder[1]{\todo{\lipsum[#1]}}
+
+\providecommand\phantomsection{}
 
 \tolerance=1
 \emergencystretch=\maxdimen
@@ -51,6 +53,7 @@
 	\textbf{\href{www.msrit.edu}{www.msrit.edu}, 2017}
 }
 
+\author{}
 \date{}
 
 \begin{document}
@@ -87,11 +90,12 @@
 	\null
 	\vspace{\fill}
 
+	\phantomsection
+	\addcontentsline{toc}{section}{Abstract}
 	\begin{abstract}
-		\addcontentsline{toc}{section}{Abstract}
 		\normalsize
 		\doublespacing
-		Sign language is the language used by the deaf and dumb to communicate among themselves and others. Unless the concerned people know the sign language properly, there's a communication barrier between them. In most cases, an interpreter is required to carry out such a conversation. To reduce the dependency of the deaf and dumb on interpreters, we develop a real time sign language detection system that converts the gestures from images and videos into English sentences, using various deep learning techniques.
+		Sign language is the language used by the hearing and speech impaired to communicate among themselves and others. Unless the concerned people know the sign language properly, there is a communication barrier between them. In most cases, an interpreter is required to carry out such a conversation. To reduce the dependency of the hearing and speech impaired people on interpreters, we develop a real time sign language detection system that converts the gestures from images and videos into English sentences, using various deep learning techniques.
 	\end{abstract}
 
 	\vspace{\fill}
@@ -126,7 +130,7 @@
 			\end{itemize}
 
 		\subsection{Current Scope}
-			Image and video processing is one of the important fields in Machine Learning and Deep Learning right now. The huge number of images and videos on social media and otherwise has led to an increased interest in the field. The algorithms and techniques developed as a result of this can be used in more impactful fields like helping the deaf and dumb lead more convenient lives. \\
+			    Image and video processing is one of the important fields in Machine Learning and Deep Learning right now. The huge number of images and videos on social media and otherwise has led to an increased interest in the field. The algorithms and techniques developed as a result of this can be used in more impactful fields like helping the speech and hearing impaired lead more convenient lives. \\
 			\\
 			The hand signs along with the emotions displayed by the individual provide the content and tone of the sentence. A tool to convert their words into a widely used language enhances their ability to communicate.
 
@@ -142,12 +146,11 @@
 			There have been a lot of different approaches used to solve the problem of sign language recognition. However, most of these use image processing in MATLAB, upon which Machine Learning algorithms are applied. There has also been some work done using artificial neural networks.
 
 		\subsection{Related work with the citation of references}
-			\cite{dutta:2015} deals with the double handed Indian Sign Language. It is captured as a series of images and is processed with the help of MATLAB and then converted to speech and text. However this approach uses image processing techniques which are highly sensitive to lighting conditions. \\
+			\cite{dutta:2015} deals with the double handed Indian Sign Language. It is captured as a series of images, processed with the help of MATLAB and then converted to speech and text. However this approach uses image processing techniques which are highly sensitive to lighting conditions. \\
 			\\
-			\cite{DK:2014}
-			\placeholder{2}
-			And another one \\
-			\cite{autoisl:2013} \placeholder{4}
+			\cite{DK:2014} proposes an image processing, computer vision and neural network based approach to identify the characteristics of the hand in images taken from a video through webcam. Identification of hand shapes from continuous frames is done by using series of image processing operations. Interpretation of signs and corresponding meaning is identified by using Haar Cascade Classifier. Finally displayed text is converted into speech using speech synthesizer. \\
+			\\
+			\cite{autoisl:2013} proposes a system that consists of three phases, a training phase, a testing phase and a recognition phase. In the training phase, each class is trained with a multiclass support vector machine (MSVM). Hu invariant moment and structural shape descriptors are combined to make a combinational feature vector that are to be extracted from the input image in the testing phase after applying preprocessing. In the recognition phase, different classes are used for testing an input gesture.
 
 		\subsection{Conclusion of Survey}
 			Deep neural networks have revolutionized how different Machine Learning problems are approached. Using them to solve this problem can give significant results, and that is precisely what this project explores.
@@ -160,7 +163,7 @@
 	\section{Software Requirement Specification}
 
 		\subsection{Project Overview}
-			Images of numbers and letters, and videos of words and sentences are fed as input to the model and interpreted text is received as output.
+			Images of numbers and letters, and videos of words and sentences are fed as input to the model and interpreted text is received as output using various deep learning techniques.
 
 		\subsection{Hardware}
 			We use a system with NVIDIA\textsuperscript{\textregistered} GeForce\textsuperscript{\textregistered} 940MX (4 GB DDR3) GPU and 8 GB RAM to perform our experiment. A camera is required to record hand gestures and facial expressions.
@@ -171,7 +174,7 @@
 				\item Python
 				\item OpenCV
 				\item CUDA
-				\item PyTorch has been used for training and testing the deep neural network.
+				\item PyTorch for training and testing the deep neural network.
 			\end{itemize}
 
 		\subsection{Functional Requirements}
@@ -186,18 +189,60 @@
 	\section{Design}
 
 		\subsection{Introduction}
-			\placeholder{1}
+			This project has been designed such that it incorporates some of the major applications of machine learning and deep learning. Various concepts such as image and video processing, different neural network architectures, etc. are used. Simplicity and effectiveness are the key factors considered while designing and developing this application.
 
 		\subsection{Architecture Design}
-			\placeholder{2}
+
+			\begin{figure}[htp]
+				\centering
+				\includegraphics{architecture.png}
+				\caption{Architecture}
+				\label{fig:ad}
+			\end{figure}
+
+			\autoref{fig:ad} gives a brief overview of the architecture that the Sign Language Recognition application follows. \\
+
+			\begin{description}[style=nextline]
+
+				\item[Input module] A camera is required to record the entire conversation. Letters and digits can be considered as single frames, whereas words and sentences are recorded as videos.
+
+				\item[Image and Video Processing] Image and video processing is done using Python and OpenCV. Videos are converted into a series of frames to simplify the process of recognizing gestures.
+
+				\item[Convolutional Neural Network] These networks are a class of deep feedforward neural networks that are based on weight sharing. They are commonly used in image and video processing to identify manifolds. In this project, they are used to identify hands from the given frames.
+
+				\item[Recurrent Neural Network] Recurrent Neural Networks are used whenever memory of previous computations is required. It is used to identify the hand gesture by considering the gestures denoted by the current and the previous frames.
+
+				\item[Natural Language Processing] Natural Language Processing is used to convert the output of the Recurrent Neural Network into proper English text.
+
+			\end{description}
 
 		\subsection{Data Flow Diagram}
-			\placeholder{23}
+
+			\begin{figure}[htp]
+				\centering
+				\includegraphics{dfd.png}
+				\caption{Data Flow Diagram}
+				\label{fig:dfd}
+			\end{figure}
+
+			\autoref{fig:dfd} gives the interaction between the different modules of the application and how data flows between them. \\
+
+			\begin{description}[style=nextline]
+
+				\item[Input] The input to the application is taken in the form of either images or videos. Images are considered as sequences of a single frame, whereas videos are converted into a series of frames using OpenCV. \\
+				These frames are converted into grayscale images to ensure uniformity in the training and test data in terms of the background, etc.
+
+				\item[Convolutional Neural Network] This neural network is given grayscale images as input. It processes them and converts them to vectors that denote the positions of the hands in the image.
+
+				\item[Recurrent Neural Network] This network takes in the input vectors and outputs letters/digits/words in the order of $subject - object - verb$.
+
+				\item[Natural Language Processing module] NLP is required to convert this sentence in the form of $subject - object - verb$ into a proper English sentence.
+
+			\end{description}
 
 		\subsection{Conclusion}
-			\placeholder{4}
+			It is a challenge to convert hand gestures to text due to wide variety of signs and their associated meanings. It is important that a sign language recognition system is as accurate as possible, due to the number of people that could use it and benefit from it. In such a case, even if such applications already exist, there is always a possibility of developing more effective or advanced systems using newer technology, and the work presented here tests one such approach.
 
-	\newpage
 	\bibliographystyle{unsrt}
 	\bibliography{report}{}
 \end{document}
