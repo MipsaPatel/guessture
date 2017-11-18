@@ -2,6 +2,7 @@ import os
 from bisect import bisect
 
 import cv2
+import magic
 from torch.utils.data import Dataset
 
 
@@ -13,10 +14,11 @@ class FrameLoader(Dataset):
         self.root_dir = root_dir
         self.transform = transform
 
-        self.capture = list(map(cv2.VideoCapture, map(lambda x: os.path.join(self.root_dir, x), sorted(os.listdir(self.root_dir)))))
+        files = sorted(filter(lambda x: magic.from_file(x, mime=True).startswith('video'), os.listdir(self.root_dir)))
+        self.capture = list(map(cv2.VideoCapture, map(lambda x: os.path.join(self.root_dir, x), files)))
         self.frame_counts = list(map(lambda x: int(x.get(FrameLoader.FRAME_COUNT_PROPERTY)), self.capture))
-        for i in range(1, len(self.frame_counts)):
-            self.frame_counts[i] += self.frame_counts[i - 1]
+        for v_i in range(1, len(self.frame_counts)):
+            self.frame_counts[v_i] += self.frame_counts[v_i - 1]
 
     def __len__(self):
         return self.frame_counts[-1]
