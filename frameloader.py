@@ -14,7 +14,7 @@ class FrameLoader(Dataset):
         self.root_dir = root_dir
         self.transform = transform
 
-        files = sorted(filter(lambda x: magic.from_file(x, mime=True).startswith('video'), os.listdir(self.root_dir)))
+        files = sorted(filter(lambda x: magic.from_file(os.path.join(self.root_dir, x), mime=True).startswith('video'), os.listdir(self.root_dir)))
         self.capture = list(map(cv2.VideoCapture, map(lambda x: os.path.join(self.root_dir, x), files)))
         self.frame_counts = list(map(lambda x: int(x.get(FrameLoader.FRAME_COUNT_PROPERTY)), self.capture))
         for v_i in range(1, len(self.frame_counts)):
@@ -38,15 +38,15 @@ class FrameLoader(Dataset):
             v.release()
 
 if __name__ == '__main__':
-    data_set = FrameLoader('/home/tsn/Videos')
+    data_set = FrameLoader('../sample')
     print("Length:", len(data_set))
     print("Root:", data_set.root_dir)
     print("Capture:", data_set.capture)
     print("Transform", data_set.transform)
     print("Counts:", data_set.frame_counts)
-    for i in range(1, len(data_set), 1000):
+    for i in range(0, len(data_set), 100):
         frame = data_set[i]
         cv2.imshow(str(i), frame)
-        cv2.waitKey(100)
+        cv2.waitKey(200)
     del data_set
     cv2.destroyAllWindows()
