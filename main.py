@@ -24,7 +24,7 @@ BATCH_SIZE = 32
 TEST_BATCH_SIZE = BATCH_SIZE
 
 # number of frames to skip between 2 frames (default 0)
-FRAME_SKIP = 149  # 9
+FRAME_SKIP = 29  # 9
 
 # test split size (default 0.3 for 70:30 split)
 TEST_SIZE = 0.3
@@ -69,14 +69,13 @@ optimizer = torch.optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=MOMEN
 def train(epoch):
     model.train()
     for batch, (data, target) in enumerate(train_loader):
+        print('Batch:', batch)
         if CUDA:
             data, target = data.cuda(), target.cuda()
-        data, target = Variable(data), Variable(target)
+        data, target = Variable(data), Variable(target).long()
         optimizer.zero_grad()
         output = model(data)
-        loss = model.loss(output, target)  # FIXME: Raises an error -
-        # TypeError: FloatClassNLLCriterion_updateOutput received an invalid combination of arguments
-        # Probably the numpy array is the issue.
+        loss = model.loss(output, target)
         loss.backward()
         optimizer.step()
         if not batch % LOG_INTERVAL:
@@ -90,6 +89,7 @@ def test():
     test_loss = 0
     correct = 0
     for batch, (data, target) in enumerate(train_loader):
+        print('Batch:', batch)
         if CUDA:
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data, volatile=True), Variable(target)
@@ -106,5 +106,6 @@ def test():
 
 
 for e in range(EPOCHS):
+    print('\n\nEpoch:', e)
     train(e)
     test()

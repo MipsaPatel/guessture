@@ -23,12 +23,13 @@ class FrameLoader(Dataset):
         Y = M has 43 values for ZZ
         Y = H has 20
         :param filename: name of the video file.
-        :return: one-hot encoding of desired class
+        :return: desired class // one-hot encoding of desired class
         """
         x = filename.split('-')[1:3]
-        v = np.zeros(63, dtype='float32')
-        v[int(x[1]) + (19 if x[0] == 'M' else -1)] = 1.0
-        return v
+        # v = np.zeros(63, dtype='int64')
+        # v[int(x[1]) + (19 if x[0] == 'M' else -1)] = 1
+        # return v
+        return int(x[1]) + (19 if x[0] == 'M' else -1)
 
     def __init__(self, root_dir, frame_skip=0, transform=None):
         """
