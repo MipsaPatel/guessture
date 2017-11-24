@@ -98,8 +98,8 @@ print('CNN:')
 print('Learning Rate:', CNN_LEARNING_RATE)
 print('Epochs:', CNN_EPOCHS)
 print('RNN:')
-print('Learning Rate:', '######## FILL ########')
-print('Epochs:', '######## FILL ########')
+print('Learning Rate:', RNN_LEARNING_RATE)
+print('Epochs:', RNN_EPOCHS)
 
 
 # # # # # # # # # # TRAINING AND TESTING CNN # # # # # # # # # #
