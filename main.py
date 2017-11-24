@@ -1,7 +1,9 @@
 import torch
 from torch.autograd import Variable
 from torchvision import transforms
+from torch import nn
 
+from rnn import RNN
 from cnn import CNN
 from frameloader import train_test_loader
 
@@ -71,6 +73,18 @@ LOG_INTERVAL = 100
 
 EPOCHS = 2
 
+# Parameters for RNN
+num_classes = 63
+hidden_size = 256
+input_size = 63
+num_layers = 3
+
+rnn_model = RNN(input_size, num_layers, num_classes, hidden_size)
+
+# Loss and Optimizer
+criterion = nn.CrossEntropyLoss()
+rnn_optimizer = torch.optim.Adam(rnn_model.parameters(), lr=LEARNING_RATE)
+
 
 # # # # # # # # # # # # # # DETAILS # # # # # # # # # # # # # #
 
@@ -84,6 +98,13 @@ print('Epochs:', EPOCHS)
 
 
 # # # # # # # # # # # TRAINING AND TESTING # # # # # # # # # # #
+
+def rnn_train(model, rnn_model, epoch):
+    rnn_model.train()
+
+    for batch, (video, target) in enumerate(data_loader):
+        for frame in video:
+            pass
 
 
 def train(model, epoch):
