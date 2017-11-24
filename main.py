@@ -1,11 +1,10 @@
+import time
 import torch
 from torch.autograd import Variable
 from torchvision import transforms
-from torch import nn
 
 from rnn import RNN
 from cnn import CNN
-# from frameloader import train_test_loader
 from videoloader import RandomFrameLoader, train_test_data_loader, VideoLoader
 
 # # # # # # # # # # # # CUDA PARAMETERS # # # # # # # # # # # #
@@ -55,15 +54,6 @@ KWArgs = {'num_workers': NUM_WORKERS, 'pin_memory': True} if CUDA else {}
 
 print('Loading data...', flush=True, end=' ')
 
-# train_loader, test_loader = train_test_loader(DATA_DIR,
-#                                               batch_size=BATCH_SIZE,
-#                                               frame_skip=FRAME_SKIP,
-#                                               frame_interval=FRAME_INTERVAL,
-#                                               transform=TRANSFORM_LIST,
-#                                               test_batch_size=TEST_BATCH_SIZE,
-#                                               test_size=TEST_SIZE,
-#                                               **KWArgs)
-
 random_train_loader, random_test_loader = train_test_data_loader(RandomFrameLoader(DATA_DIR,
                                                                                    frame_skip=FRAME_SKIP,
                                                                                    frame_interval=FRAME_INTERVAL,
@@ -92,21 +82,9 @@ CNN_EPOCHS = 2
 
 # # # # # # # # # # # RNN MODEL PARAMETERS # # # # # # # # # # #
 
-# RNN_LEARNING_RATE = 0.01
-# RNN_MOMENTUM = 0.5
-# RNN_EPOCHS = 2
-
-# Parameters for RNN
-num_classes = 63
-hidden_size = 256
-input_size = 63
-num_layers = 3
-
-rnn_model = RNN(input_size, num_layers, num_classes, hidden_size)
-
-# Loss and Optimizer
-criterion = nn.CrossEntropyLoss()
-rnn_optimizer = torch.optim.Adam(rnn_model.parameters(), lr=LEARNING_RATE)
+RNN_LEARNING_RATE = 0.01
+RNN_MOMENTUM = 0.5
+RNN_EPOCHS = 2
 
 
 # # # # # # # # # # # # # # DETAILS # # # # # # # # # # # # # #
@@ -125,14 +103,6 @@ print('Epochs:', '######## FILL ########')
 
 
 # # # # # # # # # # TRAINING AND TESTING CNN # # # # # # # # # #
-
-def rnn_train(model, rnn_model, epoch):
-    rnn_model.train()
-
-    for batch, (video, target) in enumerate(data_loader):
-        for frame in video:
-            pass
-
 
 def train_cnn(model, epoch, loader):
     model.train()
@@ -178,20 +148,36 @@ def test_cnn(model, loader):
 
 # # # # # # # # # # TRAINING AND TESTING RNN # # # # # # # # # #
 
+def train_rnn(model, cnn, epoch, loader):
+    model.train()
+    for batch, (video, target) in enumerate(loader):
+        for frame in video:
+            del frame, cnn, epoch  # Delete this line. Used to suppress weak warnings
+            pass
+
+
+def test_rnn(model, cnn, loader):
+    del model, cnn, loader  # Delete this line. Used to suppress weak warnings
+    pass
+
 
 # # # # # # # # # # # # # LOAD OR TRAIN # # # # # # # # # # # #
 
 # change to the file you want to use
-LOAD_PATH = 'cnn_model.pth'
+CNN_LOAD_PATH = 'cnn_model.pth'
+RNN_LOAD_PATH = 'rnn_model.pth'
 
 # set to true while training RNN
-LOAD_FROM_PATH = False
+CNN_LOAD_FROM_PATH = False
+
+# set to true when reusing RNN
+RNN_LOAD_FROM_PATH = False
 
 
 # # # # # # # # # # # # # RUN CNN MODEL # # # # # # # # # # # #
 
-if LOAD_FROM_PATH:
-    CNN_model = torch.load(LOAD_PATH)
+if CNN_LOAD_FROM_PATH:
+    CNN_model = torch.load(CNN_LOAD_PATH)
 else:
     CNN_model = CNN()
     if CUDA:
@@ -204,7 +190,6 @@ else:
         train_cnn(CNN_model, e, random_train_loader)
         test_cnn(CNN_model, random_test_loader)
 
-    import time  # avoid overwriting an existing file
     path = 'cnn_model' + str(int(time.time() * 1000)) + '.pth'
     print("Saving model to '%s'..." % path, flush=True, end=' ')
     with open(path, 'wb') as f:
@@ -217,4 +202,27 @@ else:
 test_cnn(CNN_model, random_test_loader)
 
 # # # # # # # # # # # # # RUN RNN MODEL # # # # # # # # # # # #
-# use video_train_loader, video_test_loader for data
+
+if RNN_LOAD_FROM_PATH:
+    RNN_model = torch.load(RNN_LOAD_PATH)
+else:
+    RNN_model = RNN()
+    if CUDA:
+        RNN_model = RNN_model.cuda()
+
+    RNN_criterion = torch.nn.CrossEntropyLoss()
+    RNN_optimizer = torch.optim.Adam(RNN_model.parameters(), lr=RNN_LEARNING_RATE)
+
+    # Change this:
+    for e in range(RNN_EPOCHS):
+        print('\n\nEpoch:', e)
+        # use these signatures for uniformity
+        train_rnn(RNN_model, CNN_model, e, video_train_loader)
+        test_rnn(RNN_model, CNN_model, video_test_loader)
+    # Until here.
+
+    path = 'rnn_model' + str(int(time.time() * 1000)) + '.pth'
+    print("Saving model to '%s'..." % path, flush=True, end=' ')
+    with open(path, 'wb') as f:
+        torch.save(RNN_model, f)
+    print('Done')

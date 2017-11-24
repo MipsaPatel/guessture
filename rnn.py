@@ -1,17 +1,16 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as func
 from torch.autograd import Variable
 
+
 class RNN(nn.Module):
-    def __init__(self, input_size, num_layers, num_classes, hidden_size):
+    def __init__(self):
         super(RNN, self).__init__()
-        self.hidden_size = hidden_size
-        self.num_layers = num_layers
+        self.hidden_size = 256
+        self.num_layers = 3
 
-        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
-        self.fc = nn.Linear(hidden_size, num_layers)
-
+        self.lstm = nn.LSTM(63, self.hidden_size, self.num_layers, batch_first=True)
+        self.fc = nn.Linear(self.hidden_size, 63)
 
     def forward(self, x):
         h0 = Variable(torch.zeros(self.num_layers, x.size(0), self.hidden_size))
