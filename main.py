@@ -5,13 +5,17 @@ from torchvision import transforms
 from cnn import CNN
 from frameloader import train_test_loader
 
+
 # # # # # # # # # # # # CUDA PARAMETERS # # # # # # # # # # # #
+
 CUDA = True  # Set this to False if you don't want CUDA to be used
 NUM_WORKERS = 1
 
 CUDA = CUDA and torch.cuda.is_available()
 
+
 # # # # # # # # # # # DATA SET PARAMETERS # # # # # # # # # # #
+
 # data set to use
 DATA_DIR = '../sample'
 
@@ -57,15 +61,18 @@ train_loader, test_loader = train_test_loader(DATA_DIR,
 
 print('Done')
 
+
 # # # # # # # # # # # # MODEL PARAMETERS # # # # # # # # # # # #
+
 LEARNING_RATE = 0.01
 MOMENTUM = 0.5
 
 LOG_INTERVAL = 100
 
-EPOCHS = 10
+EPOCHS = 2
 
-# # # # # # # # # # # # # # Details # # # # # # # # # # # # # #
+
+# # # # # # # # # # # # # # DETAILS # # # # # # # # # # # # # #
 
 print('Directory:', DATA_DIR)
 print('Length: Train: (%d); Test: (%d)' % (len(train_loader.batch_sampler.sampler),
@@ -75,16 +82,11 @@ print('Frames: (%.2f, %.2f) with' % FRAME_INTERVAL, FRAME_SKIP, 'skip')
 print('Learning Rate:', LEARNING_RATE)
 print('Epochs:', EPOCHS)
 
-# # # # # # # # # # # Training and Testing # # # # # # # # # # #
 
-model = CNN()
-if CUDA:
-    model = model.cuda()
-
-optimizer = torch.optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=MOMENTUM)
+# # # # # # # # # # # TRAINING AND TESTING # # # # # # # # # # #
 
 
-def train(epoch):
+def train(model, epoch):
     model.train()
     print('Training:')
     for batch, (data, target) in enumerate(train_loader):
@@ -103,7 +105,7 @@ def train(epoch):
             print('Loss:', loss.data[0])
 
 
-def test():
+def test(model):
     model.eval()
     test_loss = 0
     correct = 0
@@ -126,7 +128,41 @@ def test():
     print('Accuracy: ', correct, '/', test_length, ' (', round(100.0 * correct / test_length, 1), '%)', sep='')
 
 
-for e in range(EPOCHS):
-    print('\n\nEpoch:', e)
-    train(e)
-    test()
+# # # # # # # # # # # # # LOAD OR TRAIN # # # # # # # # # # # #
+
+# change to the file you want to use
+LOAD_PATH = 'model.pth'
+
+# set to true while training RNN
+LOAD_FROM_PATH = False
+
+
+# # # # # # # # # # # # # RUN CNN MODEL # # # # # # # # # # # #
+
+if LOAD_FROM_PATH:
+    CNN_model = torch.load(LOAD_PATH)
+else:
+    CNN_model = CNN()
+    if CUDA:
+        CNN_model = CNN_model.cuda()
+
+    optimizer = torch.optim.SGD(CNN_model.parameters(), lr=LEARNING_RATE, momentum=MOMENTUM)
+
+    for e in range(EPOCHS):
+        print('\n\nEpoch:', e)
+        train(CNN_model, e)
+        test(CNN_model)
+
+    import time  # avoid overwriting an existing file
+    path = 'model' + str(int(time.time() * 1000)) + '.pth'
+    print("Saving model to '%s'..." % path, flush=True, end=' ')
+    with open(path, 'wb') as f:
+        torch.save(CNN_model, f)
+    print('Done')
+
+
+# # # # # # # # # # # # # TEST CNN MODEL # # # # # # # # # # # #
+
+test(CNN_model)
+
+# # # # # # # # # # # # # RUN RNN MODEL # # # # # # # # # # # #
