@@ -23,8 +23,11 @@ IMAGE_SCALE = 128
 BATCH_SIZE = 32
 TEST_BATCH_SIZE = BATCH_SIZE
 
+# start and end of video, as ratio
+FRAME_INTERVAL = 0.25, 0.75
+
 # number of frames to skip between 2 frames (default 0)
-FRAME_SKIP = 29  # 9
+FRAME_SKIP = 9
 
 # test split size (default 0.3 for 70:30 split)
 TEST_SIZE = 0.3
@@ -41,23 +44,38 @@ transform_list = transforms.Compose([
 # Additional args to DataLoader
 KWArgs = {'num_workers': NUM_WORKERS, 'pin_memory': True} if CUDA else {}
 
+print('Loading data...', flush=True, end=' ')
 
 train_loader, test_loader = train_test_loader(DATA_DIR,
                                               batch_size=BATCH_SIZE,
                                               frame_skip=FRAME_SKIP,
+                                              frame_interval=FRAME_INTERVAL,
                                               transform=transform_list,
                                               test_batch_size=TEST_BATCH_SIZE,
                                               test_size=TEST_SIZE,
                                               **KWArgs)
 
+print('Done')
 
-# # # # # # # # # # # Model PARAMETERS # # # # # # # # # # #
+# # # # # # # # # # # # MODEL PARAMETERS # # # # # # # # # # # #
 LEARNING_RATE = 0.01
 MOMENTUM = 0.5
 
-LOG_INTERVAL = 10
+LOG_INTERVAL = 100
 
 EPOCHS = 10
+
+# # # # # # # # # # # # # # Details # # # # # # # # # # # # # #
+
+print('Directory:', DATA_DIR)
+print('Length: Train: (%d); Test: (%d)' % (len(train_loader.batch_sampler.sampler),
+                                           len(test_loader.batch_sampler.sampler)))
+print('Batch size:', BATCH_SIZE)
+print('Frames: (%.2f, %.2f) with' % FRAME_INTERVAL, FRAME_SKIP, 'skip')
+print('Learning Rate:', LEARNING_RATE)
+print('Epochs:', EPOCHS)
+
+# # # # # # # # # # # Training and Testing # # # # # # # # # # #
 
 model = CNN()
 if CUDA:
@@ -68,8 +86,8 @@ optimizer = torch.optim.SGD(model.parameters(), lr=LEARNING_RATE, momentum=MOMEN
 
 def train(epoch):
     model.train()
+    print('Training:')
     for batch, (data, target) in enumerate(train_loader):
-        print('Batch:', batch)
         if CUDA:
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data), Variable(target).long()
@@ -81,6 +99,7 @@ def train(epoch):
         if not batch % LOG_INTERVAL:
             print('\nTrain:')
             print('Epoch:', epoch)
+            print('Batch:', batch)
             print('Loss:', loss.data[0])
 
 
@@ -88,8 +107,10 @@ def test():
     model.eval()
     test_loss = 0
     correct = 0
+    print('\nTesting:')
     for batch, (data, target) in enumerate(train_loader):
-        print('Batch:', batch)
+        if not batch % LOG_INTERVAL:
+            print('Batch:', batch)
         if CUDA:
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data, volatile=True), Variable(target)
