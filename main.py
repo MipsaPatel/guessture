@@ -3,8 +3,8 @@ from torch.autograd import Variable
 from torchvision import transforms
 
 from cnn import CNN
-from frameloader import train_test_loader
-
+# from frameloader import train_test_loader
+from videoloader import RandomFrameLoader, train_test_data_loader, VideoLoader
 
 # # # # # # # # # # # # CUDA PARAMETERS # # # # # # # # # # # #
 
@@ -36,8 +36,11 @@ FRAME_SKIP = 9
 # test split size (default 0.3 for 70:30 split)
 TEST_SIZE = 0.3
 
+# number of batches to process between two logs
+LOG_INTERVAL = 100
+
 # transformations to be applied to each frame
-transform_list = transforms.Compose([
+TRANSFORM_LIST = transforms.Compose([
     transforms.ToPILImage(),                        # for crop and scale
     transforms.CenterCrop(CENTER_CROP_SIZE),        # change resolution, eliminate sides
     transforms.Scale(IMAGE_SCALE),                  # scale it down
@@ -50,46 +53,70 @@ KWArgs = {'num_workers': NUM_WORKERS, 'pin_memory': True} if CUDA else {}
 
 print('Loading data...', flush=True, end=' ')
 
-train_loader, test_loader = train_test_loader(DATA_DIR,
-                                              batch_size=BATCH_SIZE,
-                                              frame_skip=FRAME_SKIP,
-                                              frame_interval=FRAME_INTERVAL,
-                                              transform=transform_list,
-                                              test_batch_size=TEST_BATCH_SIZE,
-                                              test_size=TEST_SIZE,
-                                              **KWArgs)
+# train_loader, test_loader = train_test_loader(DATA_DIR,
+#                                               batch_size=BATCH_SIZE,
+#                                               frame_skip=FRAME_SKIP,
+#                                               frame_interval=FRAME_INTERVAL,
+#                                               transform=TRANSFORM_LIST,
+#                                               test_batch_size=TEST_BATCH_SIZE,
+#                                               test_size=TEST_SIZE,
+#                                               **KWArgs)
+
+random_train_loader, random_test_loader = train_test_data_loader(RandomFrameLoader(DATA_DIR,
+                                                                                   frame_skip=FRAME_SKIP,
+                                                                                   frame_interval=FRAME_INTERVAL,
+                                                                                   transform=TRANSFORM_LIST),
+                                                                 batch_size=BATCH_SIZE,
+                                                                 test_batch_size=TEST_BATCH_SIZE,
+                                                                 test_size=TEST_SIZE)
+
+video_train_loader, video_test_loader = train_test_data_loader(VideoLoader(DATA_DIR,
+                                                                           frame_skip=FRAME_SKIP,
+                                                                           frame_interval=FRAME_INTERVAL,
+                                                                           transform=TRANSFORM_LIST),
+                                                               batch_size=1,
+                                                               test_batch_size=1,
+                                                               test_size=TEST_SIZE)
 
 print('Done')
 
 
-# # # # # # # # # # # # MODEL PARAMETERS # # # # # # # # # # # #
+# # # # # # # # # # # CNN MODEL PARAMETERS # # # # # # # # # # #
 
-LEARNING_RATE = 0.01
-MOMENTUM = 0.5
+CNN_LEARNING_RATE = 0.01
+CNN_MOMENTUM = 0.5
+CNN_EPOCHS = 2
 
-LOG_INTERVAL = 100
 
-EPOCHS = 2
+# # # # # # # # # # # RNN MODEL PARAMETERS # # # # # # # # # # #
+
+# RNN_LEARNING_RATE = 0.01
+# RNN_MOMENTUM = 0.5
+# RNN_EPOCHS = 2
 
 
 # # # # # # # # # # # # # # DETAILS # # # # # # # # # # # # # #
 
 print('Directory:', DATA_DIR)
-print('Length: Train: (%d); Test: (%d)' % (len(train_loader.batch_sampler.sampler),
-                                           len(test_loader.batch_sampler.sampler)))
+print('Length: Train: (%d); Test: (%d)' % (len(random_train_loader.batch_sampler.sampler),
+                                           len(random_test_loader.batch_sampler.sampler)))
 print('Batch size:', BATCH_SIZE)
 print('Frames: (%.2f, %.2f) with' % FRAME_INTERVAL, FRAME_SKIP, 'skip')
-print('Learning Rate:', LEARNING_RATE)
-print('Epochs:', EPOCHS)
+print('CNN:')
+print('Learning Rate:', CNN_LEARNING_RATE)
+print('Epochs:', CNN_EPOCHS)
+print('RNN:')
+print('Learning Rate:', '######## FILL ########')
+print('Epochs:', '######## FILL ########')
 
 
-# # # # # # # # # # # TRAINING AND TESTING # # # # # # # # # # #
+# # # # # # # # # # TRAINING AND TESTING CNN # # # # # # # # # #
 
 
-def train(model, epoch):
+def train_cnn(model, epoch, loader):
     model.train()
     print('Training:')
-    for batch, (data, target) in enumerate(train_loader):
+    for batch, (data, target) in enumerate(loader):
         if CUDA:
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data), Variable(target).long()
@@ -105,12 +132,12 @@ def train(model, epoch):
             print('Loss:', loss.data[0])
 
 
-def test(model):
+def test_cnn(model, loader):
     model.eval()
     test_loss = 0
     correct = 0
     print('\nTesting:')
-    for batch, (data, target) in enumerate(train_loader):
+    for batch, (data, target) in enumerate(loader):
         if not batch % LOG_INTERVAL:
             print('Batch:', batch)
         if CUDA:
@@ -121,17 +148,20 @@ def test(model):
         prediction = output.data.max(1, keepdim=True)[1]
         correct += prediction.eq(target.data.view_as(prediction)).cpu().sum()
 
-    test_length = len(test_loader.batch_sampler.sampler)
+    test_length = len(loader.batch_sampler.sampler)
     test_loss /= test_length
     print('\nTest:')
     print('Average loss:', round(test_loss, 4))
     print('Accuracy: ', correct, '/', test_length, ' (', round(100.0 * correct / test_length, 1), '%)', sep='')
 
 
+# # # # # # # # # # TRAINING AND TESTING RNN # # # # # # # # # #
+
+
 # # # # # # # # # # # # # LOAD OR TRAIN # # # # # # # # # # # #
 
 # change to the file you want to use
-LOAD_PATH = 'model.pth'
+LOAD_PATH = 'cnn_model.pth'
 
 # set to true while training RNN
 LOAD_FROM_PATH = False
@@ -146,15 +176,15 @@ else:
     if CUDA:
         CNN_model = CNN_model.cuda()
 
-    optimizer = torch.optim.SGD(CNN_model.parameters(), lr=LEARNING_RATE, momentum=MOMENTUM)
+    optimizer = torch.optim.SGD(CNN_model.parameters(), lr=CNN_LEARNING_RATE, momentum=CNN_MOMENTUM)
 
-    for e in range(EPOCHS):
+    for e in range(CNN_EPOCHS):
         print('\n\nEpoch:', e)
-        train(CNN_model, e)
-        test(CNN_model)
+        train_cnn(CNN_model, e, random_train_loader)
+        test_cnn(CNN_model, random_test_loader)
 
     import time  # avoid overwriting an existing file
-    path = 'model' + str(int(time.time() * 1000)) + '.pth'
+    path = 'cnn_model' + str(int(time.time() * 1000)) + '.pth'
     print("Saving model to '%s'..." % path, flush=True, end=' ')
     with open(path, 'wb') as f:
         torch.save(CNN_model, f)
@@ -163,6 +193,7 @@ else:
 
 # # # # # # # # # # # # # TEST CNN MODEL # # # # # # # # # # # #
 
-test(CNN_model)
+test_cnn(CNN_model, random_test_loader)
 
 # # # # # # # # # # # # # RUN RNN MODEL # # # # # # # # # # # #
+# use video_train_loader, video_test_loader for data
