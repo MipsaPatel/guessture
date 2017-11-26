@@ -7,7 +7,7 @@ class RNN(nn.Module):
     def __init__(self):
         super(RNN, self).__init__()
         self.hidden_size = 256
-        self.num_layers = 3
+        self.num_layers = 6
 
         self.input = nn.Linear(63, self.hidden_size)
         self.lstm = nn.LSTM(self.hidden_size, self.hidden_size, self.num_layers, batch_first=True)

@@ -18,7 +18,7 @@ CUDA = CUDA and torch.cuda.is_available()
 # # # # # # # # # # # DATA SET PARAMETERS # # # # # # # # # # #
 
 # data set to use
-DATA_DIR = '/home/mipsa/small'
+DATA_DIR = '/home/mipsa/sample'
 
 # image parameters
 CENTER_CROP_SIZE = 240, 240
@@ -79,7 +79,7 @@ print('Done')
 
 CNN_LEARNING_RATE = 0.03
 CNN_MOMENTUM = 0.5
-CNN_EPOCHS = 5
+CNN_EPOCHS = 30
 
 
 # # # # # # # # # # # RNN MODEL PARAMETERS # # # # # # # # # # #
@@ -165,7 +165,7 @@ def train_rnn(model, cnn, epoch, loader):
                 if cnn_output is None:
                     cnn_output = cnn(data)
                 else:
-                    torch.cat((cnn_output, cnn(data)), dim=1)
+                    torch.cat((cnn_output, cnn(data)), dim=0)
 
             # print("CNN output: ", cnn_output)
             RNN_optimizer.zero_grad()
@@ -199,7 +199,7 @@ def test_rnn(model, cnn, loader):
                 if cnn_output is None:
                     cnn_output = cnn(data)
                 else:
-                    torch.cat((cnn_output, cnn(data)), dim=1)
+                    torch.cat((cnn_output, cnn(data)), dim=0)
 
             rnn_output = model(cnn_output)
             test_loss += RNN_criterion(rnn_output, target[0]).data[0]
@@ -220,7 +220,7 @@ CNN_LOAD_PATH = 'cnn_model.pth'
 RNN_LOAD_PATH = 'rnn_model.pth'
 
 # set to true while training RNN
-CNN_LOAD_FROM_PATH = False
+CNN_LOAD_FROM_PATH = True
 
 # set to true when reusing RNN
 RNN_LOAD_FROM_PATH = False
@@ -251,7 +251,7 @@ else:
 
 # # # # # # # # # # # # # TEST CNN MODEL # # # # # # # # # # # #
 
-test_cnn(CNN_model, random_test_loader)
+# test_cnn(CNN_model, random_test_loader)
 
 # # # # # # # # # # # # # RUN RNN MODEL # # # # # # # # # # # #
 
@@ -279,4 +279,4 @@ else:
     print("Saving model to '%s'..." % path, flush=True, end=' ')
     with open(path, 'wb') as f:
         torch.save(RNN_model, f)
-    print('Done')
+print('Done')
