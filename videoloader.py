@@ -10,7 +10,7 @@ from torch.utils.data.sampler import SubsetRandomSampler
 
 
 class VideoLoader(Dataset):
-    def __init__(self, root, frame_skip=0, frame_interval=(0, 1), transform=None):
+    def __init__(self, root, frame_skip=0, frame_interval=(0, 1), transform=None, **kwargs):
         assert len(frame_interval) == 2
         start, end = frame_interval
         start = max(0, start)
@@ -18,13 +18,14 @@ class VideoLoader(Dataset):
         files = sorted(map(lambda x: os.path.join(root, x), os.listdir(root)))
         files = list(filter(lambda x: magic.from_file(x, mime=True).startswith('video'), files))
         self.frame_loaders = list(map(
-            lambda x: FrameLoader(x, frame_skip=frame_skip, start=start, end=end, transform=transform), files))
+            lambda x: DataLoader(FrameLoader(x, frame_skip=frame_skip, start=start, end=end, transform=transform), **kwargs),
+                                 files))
 
     def __len__(self):
         return len(self.frame_loaders)
 
     def __getitem__(self, index):
-        return self.frame_loaders[index], self.frame_loaders[index].target
+        return self.frame_loaders[index]
 
 
 class RandomFrameLoader(Dataset):
@@ -102,7 +103,8 @@ if __name__ == '__main__':
         transforms.Lambda(lambda x: x.convert('L')),
         transforms.ToTensor()
     ])
-    data_set = RandomFrameLoader('../sample', frame_skip=29, transform=transform_list)
+
+    data_set = RandomFrameLoader('/home/mipsa/sample', frame_skip=29, transform=transform_list)
     print("Length:", len(data_set))
     for i in range(0, len(data_set), 500):
         frame, target = data_set[i]
@@ -112,7 +114,8 @@ if __name__ == '__main__':
         cv2.waitKey(500)
     cv2.destroyAllWindows()
 
-    data_set = VideoLoader('../sample', frame_skip=14, transform=transform_list)
+    data_set = VideoLoader('/home/mipsa/sample', frame_skip=14, transform=transform_list)
+    print(data_set)
     print("Length:", len(data_set))
     for i in range(0, len(data_set), 100):
         frame_loader, video_target = data_set[i]

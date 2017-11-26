@@ -18,7 +18,7 @@ CUDA = CUDA and torch.cuda.is_available()
 # # # # # # # # # # # DATA SET PARAMETERS # # # # # # # # # # #
 
 # data set to use
-DATA_DIR = '../sample'
+DATA_DIR = '/home/mipsa/small'
 
 # image parameters
 CENTER_CROP_SIZE = 240, 240
@@ -32,7 +32,7 @@ TEST_BATCH_SIZE = BATCH_SIZE
 FRAME_INTERVAL = 0.25, 0.75
 
 # number of frames to skip between 2 frames (default 0)
-FRAME_SKIP = 9
+FRAME_SKIP = 2
 
 # test split size (default 0.3 for 70:30 split)
 TEST_SIZE = 0.3
@@ -60,31 +60,33 @@ random_train_loader, random_test_loader = train_test_data_loader(RandomFrameLoad
                                                                                    transform=TRANSFORM_LIST),
                                                                  batch_size=BATCH_SIZE,
                                                                  test_batch_size=TEST_BATCH_SIZE,
-                                                                 test_size=TEST_SIZE)
+                                                                 test_size=TEST_SIZE, **KWArgs)
 
 video_train_loader, video_test_loader = train_test_data_loader(VideoLoader(DATA_DIR,
                                                                            frame_skip=FRAME_SKIP,
                                                                            frame_interval=FRAME_INTERVAL,
-                                                                           transform=TRANSFORM_LIST),
+                                                                           transform=TRANSFORM_LIST,
+                                                                           batch_size=BATCH_SIZE,
+                                                                           **KWArgs),
                                                                batch_size=1,
                                                                test_batch_size=1,
-                                                               test_size=TEST_SIZE)
+                                                               test_size=TEST_SIZE, collate_fn=lambda x: x, **KWArgs)
 
 print('Done')
 
 
 # # # # # # # # # # # CNN MODEL PARAMETERS # # # # # # # # # # #
 
-CNN_LEARNING_RATE = 0.01
+CNN_LEARNING_RATE = 0.03
 CNN_MOMENTUM = 0.5
-CNN_EPOCHS = 2
+CNN_EPOCHS = 5
 
 
 # # # # # # # # # # # RNN MODEL PARAMETERS # # # # # # # # # # #
 
-RNN_LEARNING_RATE = 0.01
+RNN_LEARNING_RATE = 0.03
 RNN_MOMENTUM = 0.5
-RNN_EPOCHS = 2
+RNN_EPOCHS = 20
 
 
 # # # # # # # # # # # # # # DETAILS # # # # # # # # # # # # # #
@@ -108,11 +110,13 @@ def train_cnn(model, epoch, loader):
     model.train()
     print('Training:')
     for batch, (data, target) in enumerate(loader):
+        # print("CNN:;; ", data, target)
         if CUDA:
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data), Variable(target).long()
         optimizer.zero_grad()
         output = model(data)
+        # print(output)
         loss = model.loss(output, target)
         loss.backward()
         optimizer.step()
@@ -150,15 +154,63 @@ def test_cnn(model, loader):
 
 def train_rnn(model, cnn, epoch, loader):
     model.train()
-    for batch, (video, target) in enumerate(loader):
-        for frame in video:
-            del frame, cnn, epoch  # Delete this line. Used to suppress weak warnings
-            pass
+    for batch, videos in enumerate(loader):
+        for video in videos:
+            cnn_output = None
+            for data, target in video:
+                if CUDA:
+                    data, target = data.cuda(), target.cuda()
+                data, target = Variable(data), Variable(target).long()
+
+                if cnn_output is None:
+                    cnn_output = cnn(data)
+                else:
+                    torch.cat((cnn_output, cnn(data)), dim=1)
+
+            # print("CNN output: ", cnn_output)
+            RNN_optimizer.zero_grad()
+            rnn_output = model(cnn_output)
+            # print("RNN output: ", rnn_output, target[0])
+            loss = RNN_criterion(rnn_output, target[0])
+            # print("Loss: ", loss)
+            loss.backward()
+            RNN_optimizer.step()
+
+        if not batch % LOG_INTERVAL:
+            print('\nRNN Train:')
+            print('Epoch:', epoch)
+            print('Batch:', batch)
+            print('Loss:', loss.data[0])
 
 
 def test_rnn(model, cnn, loader):
-    del model, cnn, loader  # Delete this line. Used to suppress weak warnings
-    pass
+    model.eval()
+    test_loss = 0
+    correct = 0
+
+    for videos in loader:
+        for video in videos:
+            cnn_output = None
+            for data, target in video:
+                if CUDA:
+                    data, target = data.cuda(), target.cuda()
+                data, target = Variable(data), Variable(target).long()
+
+                if cnn_output is None:
+                    cnn_output = cnn(data)
+                else:
+                    torch.cat((cnn_output, cnn(data)), dim=1)
+
+            rnn_output = model(cnn_output)
+            test_loss += RNN_criterion(rnn_output, target[0]).data[0]
+            prediction = rnn_output.data.max(1, keepdim=True)[1]
+            correct += prediction.eq(target[0].data.view_as(prediction)).cpu().sum()
+
+    test_length = len(loader.batch_sampler.sampler)
+    test_loss /= test_length
+    print('\nTest:')
+    print('Average loss:', round(test_loss, 4))
+    print('Accuracy: ', correct, '/', test_length, ' (', round(100.0 * correct / test_length, 1), '%)', sep='')
 
 
 # # # # # # # # # # # # # LOAD OR TRAIN # # # # # # # # # # # #
@@ -212,6 +264,8 @@ else:
 
     RNN_criterion = torch.nn.CrossEntropyLoss()
     RNN_optimizer = torch.optim.Adam(RNN_model.parameters(), lr=RNN_LEARNING_RATE)
+
+    print("RNN")
 
     # Change this:
     for e in range(RNN_EPOCHS):
