@@ -18,7 +18,7 @@ CUDA = CUDA and torch.cuda.is_available()
 # # # # # # # # # # # DATA SET PARAMETERS # # # # # # # # # # #
 
 # data set to use
-DATA_DIR = '/home/mipsa/sample'
+DATA_DIR = '/home/mipsa/small'
 
 # image parameters
 CENTER_CROP_SIZE = 240, 240
@@ -77,14 +77,14 @@ print('Done')
 
 # # # # # # # # # # # CNN MODEL PARAMETERS # # # # # # # # # # #
 
-CNN_LEARNING_RATE = 0.03
+CNN_LEARNING_RATE = 0.01
 CNN_MOMENTUM = 0.5
 CNN_EPOCHS = 30
 
 
 # # # # # # # # # # # RNN MODEL PARAMETERS # # # # # # # # # # #
 
-RNN_LEARNING_RATE = 0.03
+RNN_LEARNING_RATE = 0.01
 RNN_MOMENTUM = 0.5
 RNN_EPOCHS = 20
 
@@ -127,7 +127,7 @@ def train_cnn(model, epoch, loader):
             print('Loss:', loss.data[0])
 
 
-def test_cnn(model, loader):
+def test_cnn(model, epoch, loader):
     model.eval()
     test_loss = 0
     correct = 0
@@ -145,9 +145,16 @@ def test_cnn(model, loader):
 
     test_length = len(loader.batch_sampler.sampler)
     test_loss /= test_length
+    accuracy = round(100.0 * correct / test_length, 1)
     print('\nTest:')
     print('Average loss:', round(test_loss, 4))
     print('Accuracy: ', correct, '/', test_length, ' (', round(100.0 * correct / test_length, 1), '%)', sep='')
+
+    if epoch % 5 == 0:
+        path = 'cnn_accuracy' + '_' + str(epoch) + '_' + str(int(time.time() * 1000)) + '.txt'
+        print("Saving accuracy to '%s'..." % path, flush=True, end=' ')
+        with open(path, 'w') as f:
+            f.write(str(accuracy))
 
 
 # # # # # # # # # # TRAINING AND TESTING RNN # # # # # # # # # #
@@ -220,7 +227,7 @@ CNN_LOAD_PATH = 'cnn_model.pth'
 RNN_LOAD_PATH = 'rnn_model.pth'
 
 # set to true while training RNN
-CNN_LOAD_FROM_PATH = True
+CNN_LOAD_FROM_PATH = False
 
 # set to true when reusing RNN
 RNN_LOAD_FROM_PATH = False
@@ -240,18 +247,27 @@ else:
     for e in range(CNN_EPOCHS):
         print('\n\nEpoch:', e)
         train_cnn(CNN_model, e, random_train_loader)
-        test_cnn(CNN_model, random_test_loader)
+        test_cnn(CNN_model, e, random_test_loader)
 
-    path = 'cnn_model' + str(int(time.time() * 1000)) + '.pth'
-    print("Saving model to '%s'..." % path, flush=True, end=' ')
-    with open(path, 'wb') as f:
-        torch.save(CNN_model, f)
+        if e % 5 == 0:
+            path = 'cnn_model' + '_' + str(e) + '_' + str(int(time.time() * 1000)) + '.pth'
+            print("Saving model to '%s'..." % path, flush=True, end=' ')
+            with open(path, 'wb') as f:
+                torch.save(CNN_model, f)
+
+    # path = 'cnn_model' + str(int(time.time() * 1000)) + '.pth'
+    # print("Saving model to '%s'..." % path, flush=True, end=' ')
+    # with open(path, 'wb') as f:
+    #     torch.save(CNN_model, f)
+
     print('Done')
 
 
 # # # # # # # # # # # # # TEST CNN MODEL # # # # # # # # # # # #
 
-# test_cnn(CNN_model, random_test_loader)
+test_cnn(CNN_model, CNN_EPOCHS, random_test_loader)
+quit()
+
 
 # # # # # # # # # # # # # RUN RNN MODEL # # # # # # # # # # # #
 
