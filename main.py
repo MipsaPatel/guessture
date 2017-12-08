@@ -5,6 +5,7 @@ from torchvision import transforms
 
 from rnn import RNN
 from cnn import CNN
+
 from videoloader import RandomFrameLoader, train_test_data_loader, VideoLoader
 
 # # # # # # # # # # # # CUDA PARAMETERS # # # # # # # # # # # #
@@ -18,7 +19,7 @@ CUDA = CUDA and torch.cuda.is_available()
 # # # # # # # # # # # DATA SET PARAMETERS # # # # # # # # # # #
 
 # data set to use
-DATA_DIR = '/home/mipsa/small'
+DATA_DIR = '../sample'
 
 # image parameters
 CENTER_CROP_SIZE = 240, 240
@@ -79,7 +80,7 @@ print('Done')
 
 CNN_LEARNING_RATE = 0.01
 CNN_MOMENTUM = 0.5
-CNN_EPOCHS = 30
+CNN_EPOCHS = 20
 
 
 # # # # # # # # # # # RNN MODEL PARAMETERS # # # # # # # # # # #
@@ -104,19 +105,17 @@ print('Learning Rate:', RNN_LEARNING_RATE)
 print('Epochs:', RNN_EPOCHS)
 
 
-# # # # # # # # # # TRAINING AND TESTING CNN # # # # # # # # # #
+# # # # # # # # # # TRAINING AND TESTING CNN  # # # # # # # # # #
 
 def train_cnn(model, epoch, loader):
     model.train()
     print('Training:')
     for batch, (data, target) in enumerate(loader):
-        # print("CNN:;; ", data, target)
         if CUDA:
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data), Variable(target).long()
         optimizer.zero_grad()
         output = model(data)
-        # print(output)
         loss = model.loss(output, target)
         loss.backward()
         optimizer.step()
@@ -150,7 +149,7 @@ def test_cnn(model, epoch, loader):
     print('Average loss:', round(test_loss, 4))
     print('Accuracy: ', correct, '/', test_length, ' (', round(100.0 * correct / test_length, 1), '%)', sep='')
 
-    if epoch % 5 == 0:
+    if epoch and epoch % 5 == 0:
         path = 'cnn_accuracy' + '_' + str(epoch) + '_' + str(int(time.time() * 1000)) + '.txt'
         print("Saving accuracy to '%s'..." % path, flush=True, end=' ')
         with open(path, 'w') as f:
@@ -174,12 +173,9 @@ def train_rnn(model, cnn, epoch, loader):
                 else:
                     torch.cat((cnn_output, cnn(data)), dim=0)
 
-            # print("CNN output: ", cnn_output)
             RNN_optimizer.zero_grad()
             rnn_output = model(cnn_output)
-            # print("RNN output: ", rnn_output, target[0])
             loss = RNN_criterion(rnn_output, target[0])
-            # print("Loss: ", loss)
             loss.backward()
             RNN_optimizer.step()
 
@@ -195,7 +191,7 @@ def test_rnn(model, cnn, loader):
     test_loss = 0
     correct = 0
 
-    for videos in loader:
+    for batch, videos in enumerate(loader):
         for video in videos:
             cnn_output = None
             for data, target in video:
@@ -249,16 +245,11 @@ else:
         train_cnn(CNN_model, e, random_train_loader)
         test_cnn(CNN_model, e, random_test_loader)
 
-        if e % 5 == 0:
+        if e and e % 5 == 0:
             path = 'cnn_model' + '_' + str(e) + '_' + str(int(time.time() * 1000)) + '.pth'
             print("Saving model to '%s'..." % path, flush=True, end=' ')
             with open(path, 'wb') as f:
                 torch.save(CNN_model, f)
-
-    # path = 'cnn_model' + str(int(time.time() * 1000)) + '.pth'
-    # print("Saving model to '%s'..." % path, flush=True, end=' ')
-    # with open(path, 'wb') as f:
-    #     torch.save(CNN_model, f)
 
     print('Done')
 
@@ -266,7 +257,6 @@ else:
 # # # # # # # # # # # # # TEST CNN MODEL # # # # # # # # # # # #
 
 test_cnn(CNN_model, CNN_EPOCHS, random_test_loader)
-quit()
 
 
 # # # # # # # # # # # # # RUN RNN MODEL # # # # # # # # # # # #
@@ -283,16 +273,19 @@ else:
 
     print("RNN")
 
-    # Change this:
     for e in range(RNN_EPOCHS):
         print('\n\nEpoch:', e)
-        # use these signatures for uniformity
         train_rnn(RNN_model, CNN_model, e, video_train_loader)
         test_rnn(RNN_model, CNN_model, video_test_loader)
-    # Until here.
 
-    path = 'rnn_model' + str(int(time.time() * 1000)) + '.pth'
-    print("Saving model to '%s'..." % path, flush=True, end=' ')
-    with open(path, 'wb') as f:
-        torch.save(RNN_model, f)
-print('Done')
+        if e and e % 5 == 0:
+            path = 'rnn_model' + str(int(time.time() * 1000)) + '.pth'
+            print("Saving model to '%s'..." % path, flush=True, end=' ')
+            with open(path, 'wb') as f:
+                torch.save(RNN_model, f)
+
+    print('Done')
+
+# # # # # # # # # # # # # TEST RNN MODEL # # # # # # # # # # # #
+
+# test_rnn(RNN_model, RNN_EPOCHS, random_test_loader)
