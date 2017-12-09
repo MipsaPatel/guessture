@@ -1,12 +1,12 @@
 import time
+
 import torch
+from rnn import RNN
 from torch.autograd import Variable
 from torchvision import transforms
-
-from rnn import RNN
-from cnn import CNN
-
 from videoloader import RandomFrameLoader, train_test_data_loader, VideoLoader
+
+from old.cnn import CNN
 
 # # # # # # # # # # # # CUDA PARAMETERS # # # # # # # # # # # #
 

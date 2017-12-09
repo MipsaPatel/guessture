@@ -76,7 +76,7 @@ class FrameLoader(Dataset):
 
 
 def train_test_data_loader(data, batch_size, test_batch_size=None,
-                      test_size=0.3, **kwargs):
+                           test_size=0.3, **kwargs):
     if test_batch_size is None:
         test_batch_size = batch_size
 
