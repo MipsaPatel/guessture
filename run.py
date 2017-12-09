@@ -1,10 +1,10 @@
 import time
 import torch
 from torch.autograd import Variable
-from torch.optim import SGD
+from torch.optim import Adam
 from torch.utils.data import DataLoader
 
-from load import SignData
+from load import SignData, SignDataRandom
 from models import NeuralNet
 from params import Parameters
 
@@ -38,9 +38,9 @@ def train(model, optimizer, loader, epoch, rnn=True):
 
         # Get the output of the net
         output = model(data, rnn=rnn)
-        # When CNN is trained, an output is generated per frame instead of one for the entire video
+        # When CNN is trained with normal data, an output is generated per frame instead of one for the entire video
         # All have same target. So, create a tensor of matching dimensions
-        target = target.repeat(len(output))
+        # target = target.repeat(len(output))
 
         # compute the loss and back-propagate
         loss = model.loss(output, target)
@@ -51,7 +51,7 @@ def train(model, optimizer, loader, epoch, rnn=True):
 
         # Log
         if not (batch + 1) % P.log_interval:
-            print('Train [%d] (%d)...' % (epoch, batch + 1), loss.data[0])
+            print('Train [%d] (%d)... %.6f' % (epoch, batch + 1, loss.data[0]))
 
 
 def test(model, loader, epoch, rnn=True):
@@ -78,13 +78,14 @@ def test(model, loader, epoch, rnn=True):
             data, target = data.cuda(), target.cuda()
 
         # Create a Variable instance for each. PyTorch requires all values to be Variables
-        data, target = Variable(data), Variable(target)
+        data, target = Variable(data, volatile=True), Variable(target)
 
         # Get the output of the net
         output = model(data, rnn=rnn)
-        # While testing CNN, an output is generated per frame instead of one for the entire video
+        # While testing CNN with normal loader, an output is generated per frame instead of one for the entire video
         # All have same target. So, create a tensor of matching dimensions
-        target = target.repeat(len(output))
+        # target = target.repeat(len(output))
+
         # count the number of tests done
         count += len(target)
 
@@ -95,13 +96,14 @@ def test(model, loader, epoch, rnn=True):
 
         # Log
         if not (batch + 1) % P.log_interval:
-            print('Test [%d] (%d)...' % (epoch, batch + 1), round(loss / count, 4),
-                  round(100.0 * correct / count, 2), '(%d/%d)' % (correct, count))
+            print('Test [%d] (%d)... %.4f @%.2f%% (%d/%d)' %
+                  (epoch, batch + 1, loss / count, 100.0 * correct / count, correct, count))
 
     # Final log
-    print('\nTest [%d]:' % epoch)
-    print('Loss:', round(loss / count, 4))
-    print('Accuracy:', round(100.0 * correct / count, 2), '(%d/%d)\n' % (correct, count))
+    print('\nTest [%d]:' % epoch,
+          'Loss: %.4f' % (loss / count),
+          'Accuracy: %.2f%% (%d/%d)\n' % (100.0 * correct / count, correct, count),
+          sep='\n')
 
 
 def save(model, epoch=0, prefix='', path=None):
@@ -132,7 +134,14 @@ if __name__ == '__main__':
                                        **P.kwargs),
                               shuffle=True,
                               **P.kwargs)
-    print('Training data has', len(train_loader), 'videos.')
+    print('Training data has', len(train_loader), 'videos.\n')
+
+    print('Randomizing training data...')
+    random_train_loader = DataLoader(SignDataRandom(train_loader.dataset),
+                                     batch_size=P.cnn_train_batch_size,
+                                     shuffle=True,
+                                     **P.kwargs)
+    print('Training data has', len(random_train_loader.dataset), 'frames.\n')
     
     print('Loading testing data...')
     test_loader = DataLoader(SignData(P.test_data,
@@ -142,7 +151,14 @@ if __name__ == '__main__':
                                       **P.kwargs),
                              shuffle=True,
                              **P.kwargs)
-    print('Test data has', len(test_loader), 'videos.')
+    print('Test data has', len(test_loader), 'videos.\n')
+
+    print('Randomizing test data...')
+    random_test_loader = DataLoader(SignDataRandom(test_loader.dataset),
+                                    batch_size=P.cnn_test_batch_size,
+                                    shuffle=True,
+                                    **P.kwargs)
+    print('Test data has', len(random_test_loader.dataset), 'frames.\n')
 
     # Create or load model
     if P.load_model:
@@ -160,14 +176,14 @@ if __name__ == '__main__':
     # Training
     if P.train:
         print('Setting up parameters...')
-        model_optimizer = SGD(NN_model.parameters(), lr=P.learning_rate, momentum=P.momentum)
+        model_optimizer = Adam(NN_model.parameters(), lr=P.learning_rate)
         
         print('\nStarting training...')
         if P.train_cnn:
             print('\nTraining only CNN...')
             for e in range(P.cnn_epochs):
-                train(NN_model, model_optimizer, train_loader, e, rnn=False)
-                test(NN_model, test_loader, e, rnn=False)
+                train(NN_model, model_optimizer, random_train_loader, e, rnn=False)
+                test(NN_model, random_test_loader, e, rnn=False)
 
                 if not (e + 1) % P.save_interval:
                     save(NN_model, e, 'cnn_')

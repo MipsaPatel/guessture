@@ -21,8 +21,8 @@ class Parameters:
         self.kwargs = {'num_workers': 1, 'pin_memory': True} if cuda else {}
 
         # Data parameters
-        self.frame_interval = 0, 1
-        self.frame_skip = 9
+        self.frame_interval = 0.25, 0.75
+        self.frame_skip = 2
 
         self.test_size = 0.3
 
@@ -36,7 +36,7 @@ class Parameters:
         ])
 
         # Training parameters
-        self.learning_rate = 0.01
+        self.learning_rate = 0.001
         self.momentum = 0.5
 
         # Number of epochs
@@ -57,3 +57,7 @@ class Parameters:
         self.train_rnn = True
 
         self.train = self.train_cnn or self.train_rnn
+
+        # cnn batch size
+        self.cnn_train_batch_size = 128
+        self.cnn_test_batch_size = 128

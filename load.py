@@ -1,6 +1,8 @@
 import os
+from bisect import bisect
 
 import cv2
+import numpy as np
 from torch.utils.data import Dataset, DataLoader
 
 from helper import get_target
@@ -89,3 +91,26 @@ class SignVideo(Dataset):
         if self.transform is not None:
             frame = self.transform(frame)
         return frame
+
+
+class SignDataRandom(Dataset):
+    """
+    A data set that supports random access to any frame in any video.
+    Improves training of CNN.
+    """
+    def __init__(self, sign_data):
+        """
+        Initializes from an instance of SignData, to save space.
+        :param sign_data: The SignData instance to retrieve frames from.
+        """
+        self.videos = sign_data.videos
+        self.video_lengths = np.cumsum([0] + [len(x) for x in self.videos])
+
+    def __len__(self):
+        return self.video_lengths[-1]
+
+    def __getitem__(self, index):
+        video_index = bisect(self.video_lengths, index) - 1
+        frame_index = index - self.video_lengths[video_index]
+        video = self.videos[video_index]
+        return video[frame_index], video.target
