@@ -36,15 +36,18 @@ class Parameters:
         ])
 
         # Training parameters
-        self.learning_rate = 0.001
-        self.momentum = 0.5
+        self.learning_rate = 0.003
+        self.momentum = 0.9
+        # lr is updated to lr * lr_gamma every lr_update_step steps
+        self.lr_update_step = 2
+        self.lr_gamma = 0.9
 
         # Number of epochs
         self.cnn_epochs = 30
         self.rnn_epochs = 50
 
         # Number of batches between 2 output logs
-        self.log_interval = 50
+        self.log_interval = 100
         # Number of epochs between 2 copies of model
         self.save_interval = 5
 
@@ -59,5 +62,5 @@ class Parameters:
         self.train = self.train_cnn or self.train_rnn
 
         # cnn batch size
-        self.cnn_train_batch_size = 128
+        self.cnn_train_batch_size = 4
         self.cnn_test_batch_size = 128

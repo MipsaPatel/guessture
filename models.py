@@ -54,5 +54,6 @@ class NeuralNet(nn.Module):
             _, (x, _) = self.lstm(x)
         x = F.relu(self.l1(x))
         x = F.dropout(x, training=self.training)
-        x = F.log_softmax(self.l2(x))
-        return x.squeeze(1)  # Reduce the dimensions in torch (3 to 2)
+        # Reduce the dimensions in torch (3 to 2)
+        x = F.log_softmax(self.l2(x).squeeze(1))
+        return x

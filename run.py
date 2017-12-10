@@ -43,7 +43,8 @@ def train(model, optimizer, loader, epoch, rnn=True):
         # target = target.repeat(len(output))
 
         # compute the loss and back-propagate
-        loss = model.loss(output, target)
+        # Remove size averaging for large batch sizes
+        loss = model.loss(output, target, size_average=False)
         loss.backward()
 
         # Update the weights from gradients
@@ -177,7 +178,7 @@ if __name__ == '__main__':
     if P.train:
         print('Setting up parameters...')
         model_optimizer = Adam(NN_model.parameters(), lr=P.learning_rate)
-        
+
         print('\nStarting training...')
         if P.train_cnn:
             print('\nTraining only CNN...')
