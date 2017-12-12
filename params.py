@@ -36,7 +36,7 @@ class Parameters:
         ])
 
         # Training parameters
-        self.learning_rate = 0.003
+        self.learning_rate = 0.001
         self.momentum = 0.9
         # lr is updated to lr * lr_gamma every lr_update_step steps
         self.lr_update_step = 2
@@ -62,5 +62,5 @@ class Parameters:
         self.train = self.train_cnn or self.train_rnn
 
         # cnn batch size
-        self.cnn_train_batch_size = 4
+        self.cnn_train_batch_size = 64
         self.cnn_test_batch_size = 128
