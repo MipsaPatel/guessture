@@ -52,7 +52,7 @@ class SignVideo(Dataset):
     """
     A data-set formed by loading frames from videos.
     """
-    def __init__(self, path, frame_skip=0, start=0, end=1, transform=None):
+    def __init__(self, path, frame_skip=0, start=0, end=1, transform=None, target=True):
         """
         Create a wrapper to load each frame from given video.
         :param path: The path to the video.
@@ -69,7 +69,10 @@ class SignVideo(Dataset):
         self.capture = cv2.VideoCapture.__call__(path)  # Just to avoid warning
 
         # Get the target
-        self.target = get_target(os.path.split(path)[-1])
+        if target:
+            self.target = get_target(os.path.split(path)[-1])
+        else:
+            self.target = None
 
         # count the number of frames between (start, end) with skips
         self.length = int(self.capture.get(7))

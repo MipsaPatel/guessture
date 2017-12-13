@@ -220,7 +220,7 @@ def test_rnn(model, cnn, loader):
 
 # change to the file you want to use
 CNN_LOAD_PATH = 'cnn_model.pth'
-RNN_LOAD_PATH = 'rnn_model.pth'
+RNN_LOAD_PATH = 'model.pth'
 
 # set to true while training RNN
 CNN_LOAD_FROM_PATH = False

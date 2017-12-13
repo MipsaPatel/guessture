@@ -202,7 +202,7 @@ if __name__ == '__main__':
                     save(NN_model, e, 'rnn_')
 
             # Save model after training RNN
-            save(NN_model, path='rnn_model.pth')
+            save(NN_model, path='model.pth')
 
         # Save the final trained model
         save(NN_model, path='model.pth')
