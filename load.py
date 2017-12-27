@@ -32,8 +32,8 @@ class SignData(Dataset):
         # load the file names
         files = sorted([os.path.join(path, x) for x in os.listdir(path)])
 
-        # Create SignVideo instances
-        self.videos = [SignVideo(x, frame_skip=frame_skip, start=start, end=end, transform=transform) for x in files]
+        # Create SignVideo instances and remove those which have no frames to read
+        self.videos = list(filter(len, (SignVideo(x, frame_skip=frame_skip, start=start, end=end, transform=transform) for x in files)))
 
         # Create DataLoaders for each, with batch size = length so that all frames are loaded at once
         self.video_loaders = [DataLoader(x, batch_size=len(x), **kwargs) for x in self.videos]
