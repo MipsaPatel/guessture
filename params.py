@@ -30,7 +30,7 @@ class Parameters:
         self.transforms = transforms.Compose([
             transforms.ToPILImage(),                        # for crop and scale
             transforms.CenterCrop((240, 240)),              # change resolution, eliminate sides
-            transforms.Scale(128),                          # scale it down
+            transforms.Resize(128),                          # scale it down
             transforms.Lambda(lambda x: x.convert('L')),    # gray scale
             transforms.ToTensor()                           # make it easier for pyTorch
         ])
