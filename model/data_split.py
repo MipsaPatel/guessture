@@ -1,10 +1,9 @@
 import os
 
-import magic
 from sklearn.model_selection import train_test_split
 
-from helper import get_target
-from params import Parameters
+from .helper import get_target, is_video
+from .params import Parameters
 
 # load parameters
 P = Parameters()
@@ -14,7 +13,7 @@ os.chdir(P.data_dir)
 
 print('Loading files...')
 # load only video files
-files = sorted(filter(lambda x: magic.from_file(x, mime=True).startswith('video'), os.listdir('.')))
+files = sorted(filter(is_video, os.listdir('.')))
 # compute targets
 target = list(map(get_target, files))
 

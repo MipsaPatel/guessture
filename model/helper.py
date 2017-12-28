@@ -1,3 +1,6 @@
+import magic
+
+
 def get_target(filename):
     """
     Get the class from filename. Filename follows the format:
@@ -80,4 +83,18 @@ actions = ['O',
 
 
 def get_action(out):
+    """
+    Map the class to its description.
+    :param out: the output of the neural net, the class.
+    :return: The description of the class.
+    """
     return actions[out]
+
+
+def is_video(path):
+    """
+    Check if the file in the given path is a video file.
+    :param path: The path to the file.
+    :return: A boolean which is true if the path is a video file.
+    """
+    return magic.from_file(path, mime=True).startswith('video')

@@ -5,13 +5,14 @@ import cv2
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 
-from helper import get_target
+from .helper import get_target
 
 
 class SignData(Dataset):
     """
     Load frames in all videos as tensors.
     """
+
     def __init__(self, path, frame_skip=0, frame_interval=(0, 1), transform=None, **kwargs):
         """
         Create a data-loader instance for each video so that torch's built-in features are used to load frames as batch.
@@ -33,7 +34,8 @@ class SignData(Dataset):
         files = sorted([os.path.join(path, x) for x in os.listdir(path)])
 
         # Create SignVideo instances and remove those which have no frames to read
-        self.videos = list(filter(len, (SignVideo(x, frame_skip=frame_skip, start=start, end=end, transform=transform) for x in files)))
+        self.videos = list(filter(len, (SignVideo(x, frame_skip=frame_skip, start=start, end=end, transform=transform)
+                                        for x in files)))
 
         # Create DataLoaders for each, with batch size = length so that all frames are loaded at once
         self.video_loaders = [DataLoader(x, batch_size=len(x), **kwargs) for x in self.videos]
@@ -52,6 +54,7 @@ class SignVideo(Dataset):
     """
     A data-set formed by loading frames from videos.
     """
+
     def __init__(self, path, frame_skip=0, start=0, end=1, transform=None, target=True):
         """
         Create a wrapper to load each frame from given video.
@@ -101,6 +104,7 @@ class SignDataRandom(Dataset):
     A data set that supports random access to any frame in any video.
     Improves training of CNN.
     """
+
     def __init__(self, sign_data):
         """
         Initializes from an instance of SignData, to save space.

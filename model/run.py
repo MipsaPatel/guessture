@@ -1,12 +1,14 @@
+import os
 import time
+
 import torch
 from torch.autograd import Variable
 from torch.optim import Adam
 from torch.utils.data import DataLoader
 
-from load import SignData, SignDataRandom
-from models import NeuralNet
-from params import Parameters
+from .load import SignData, SignDataRandom
+from .models import NeuralNet
+from .params import Parameters
 
 # A container for all parameters required by the model, training etc.
 P = Parameters(torch.cuda.is_available())
@@ -107,26 +109,26 @@ def test(model, loader, epoch, rnn=True):
           sep='\n')
 
 
-def save(model, epoch=0, prefix='', path=None):
+def save(model, epoch=0, prefix='', filename=None):
     """
     Save the model.
     :param model: The model to be saved.
     :param epoch: The number of epochs this model is trained for.
     :param prefix: The string to append before the file name.
-    :param path: The path to save the model.
-                <prefix>model_<epoch>_<timestamp>.pth is used as the default path.
+    :param filename: The filename to save the model.
+                <prefix>model_<epoch>_<timestamp>.pth is used as the default filename.
     """
-    if path is None:
-        path = prefix + 'model_%03d_%d.pth' % (epoch, time.time())
+    if filename is None:
+        filename = prefix + 'model_%03d_%d.pth' % (epoch, time.time())
 
-    print("\nSaving to '%s'..." % path, end=' ', flush=True)
+    print("\nSaving to '%s'..." % filename, end=' ', flush=True)
     # File is opened as a Binary file.
-    with open(path, 'wb') as f:
-        torch.save(model, f)
+    with open(os.path.join(P.model_dir, filename), 'wb') as f:
+        torch.save(model.state_dict(), f)
     print('Done\n')
 
 
-if __name__ == '__main__':
+def run():
     print('Loading training data...')
     train_loader = DataLoader(SignData(P.train_data,
                                        P.frame_skip,
@@ -143,7 +145,7 @@ if __name__ == '__main__':
                                      shuffle=True,
                                      **P.kwargs)
     print('Training data has', len(random_train_loader.dataset), 'frames.\n')
-    
+
     print('Loading testing data...')
     test_loader = DataLoader(SignData(P.test_data,
                                       P.frame_skip,
@@ -161,50 +163,51 @@ if __name__ == '__main__':
                                     **P.kwargs)
     print('Test data has', len(random_test_loader.dataset), 'frames.\n')
 
-    # Create or load model
+    # Create model
+    print('Generating model...')
+    nn_model = NeuralNet()
+    if P.cuda:  # convert to CUDA instance if available
+        nn_model = nn_model.cuda()
     if P.load_model:
-        NN_model = torch.load(P.model_path)
-        if P.cuda:  # convert to CUDA instance if available
-            NN_model = NN_model.cuda()
+        nn_model.load_state_dict(torch.load(P.model_path))
         # Sanity check
-        test(NN_model, test_loader, 0)
-    else:
-        print('Generating model...')
-        NN_model = NeuralNet()
-        if P.cuda:  # convert to CUDA instance if available
-            NN_model = NN_model.cuda()
+        test(nn_model, test_loader, 0)
 
     # Training
     if P.train:
         print('Setting up parameters...')
-        model_optimizer = Adam(NN_model.parameters(), lr=P.learning_rate)
+        model_optimizer = Adam(nn_model.parameters(), lr=P.learning_rate)
 
         print('\nStarting training...')
         if P.train_cnn:
             print('\nTraining only CNN...')
             for e in range(P.cnn_epochs):
-                train(NN_model, model_optimizer, random_train_loader, e, rnn=False)
-                test(NN_model, random_test_loader, e, rnn=False)
+                train(nn_model, model_optimizer, random_train_loader, e, rnn=False)
+                test(nn_model, random_test_loader, e, rnn=False)
 
                 if not (e + 1) % P.save_interval:
-                    save(NN_model, e, 'cnn_')
+                    save(nn_model, e, 'cnn_')
 
             # Save model after training CNN
-            save(NN_model, path='cnn_model.pth')
+            save(nn_model, filename='cnn_model.pth')
 
         if P.train_rnn:
             print('\nTraining the entire network...')
             for e in range(P.rnn_epochs):
-                train(NN_model, model_optimizer, train_loader, e)
-                test(NN_model, test_loader, e)
+                train(nn_model, model_optimizer, train_loader, e)
+                test(nn_model, test_loader, e)
 
                 if not (e + 1) % P.save_interval:
-                    save(NN_model, e, 'rnn_')
+                    save(nn_model, e, 'rnn_')
 
             # Save model after training RNN
-            save(NN_model, path='model.pth')
+            save(nn_model, filename='model.pth')
 
         # Save the final trained model
-        save(NN_model, path='model.pth')
+        save(nn_model, filename='model.pth')
 
     print('Done!')
+
+
+if __name__ == '__main__':
+    run()

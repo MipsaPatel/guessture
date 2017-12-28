@@ -1,5 +1,5 @@
-from torch import nn
 import torch.nn.functional as F
+from torch import nn
 
 
 class NeuralNet(nn.Module):
@@ -21,6 +21,7 @@ class NeuralNet(nn.Module):
     Linear      (256, 128)  :  1 x 128
     Linear      (128, 63)   :  1 x  63
     """
+
     def __init__(self):
         """
         Initialize the layers.
