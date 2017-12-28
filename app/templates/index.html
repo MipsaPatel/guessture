@@ -6,6 +6,7 @@
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
     <link href="/static/css/font-awesome.min.css" rel="stylesheet" type="text/css">
     <link href="/static/css/custom.min.css" rel="stylesheet">
+    <link href="/static/css/animate.css" rel="stylesheet">
     <script src="/static/js/jquery.js"></script>
     <script src="/static/js/bootstrap.min.js"></script>
     <script src="/static/js/jquery.easing.min.js"></script>
@@ -86,8 +87,9 @@
                         <input type="file" name="video-file" id="video-file" class="input-file">
                         <label for="video-file" class="btn btn-default btn-lg">Upload a video</label>
                     </form>
-                    <div class="container" id="upload-progress">
-                        <!-- TODO: display progress of upload - JS -->
+                    <div class="loader" id="upload-progress">
+                        <div class="circle"></div>
+                        <div class="circle dot"></div>
                     </div>
                 </div>
             </div>
@@ -101,7 +103,7 @@
                 <div class="col-lg-8 col-lg-offset-2">
                     <!-- TODO: Better title -->
                     <h2>What we found</h2>
-                    <p class="row">
+                    <div class="row">
                         <p id="video-result"></p>
                     </div>
                 </div>

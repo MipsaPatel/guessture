@@ -10,8 +10,7 @@ function collapseNavbar() {
 $(window).scroll(collapseNavbar)
 $(document).ready(collapseNavbar)
 $(".result").fadeOut(10)
-// TODO: add upload progress animation
-//$("#upload-progress").fadeOut(10)
+$("#upload-progress").slideUp(10)
 
 $(function() {
     $('a.page-scroll').bind('click', function(event) {
@@ -32,19 +31,25 @@ function fileUpload(event) {
 
     var file = event.target.files[0]
     var formData = new FormData($('#video-form')[0])
-    $("#video-form").fadeOut(500)
-    $.ajax({
-        url: '/guess',
-        data: formData,
-        method: 'POST',
-        dataType: 'json',
-        processData: false,
-        contentType: false,
-        success: function(data) {
-            $('#video-result').html(data['result'])
-            $('.result').fadeIn(1500)
-            $('html,body').stop().animate({scrollTop: $("#result").offset().top}, 1500, 'easeInOutBack')
-            $("#video-form").fadeIn(5000)
-        }
+    $("#video-form").delay(100).slideUp(250, function() {
+        $("#upload-progress").slideDown(250, function() {
+            $.ajax({
+                url: '/guess',
+                data: formData,
+                method: 'POST',
+                dataType: 'json',
+                processData: false,
+                contentType: false,
+                success: function(data) {
+                    $('#video-result').html(data['result'])
+                    $("#upload-progress").delay(4000).slideUp(500, function() {
+                        $('.result').fadeIn(1500)
+                        $('html,body').stop().animate({scrollTop: $("#result").offset().top}, 1500, 'easeInOutBack')
+                        $("#video-form").delay(1000).slideDown(2000)
+                    })
+                }
+            })
+        })
     })
+
 }
