@@ -4,6 +4,8 @@
     position: relative;
     margin: 0 auto;
     text-align: center;
+    border-radius: 50%;
+    box-shadow: 0 0 40px 10px #9820A0A8;
 
     -webkit-animation: spin 1s linear infinite;
     animation: spin 1s linear infinite;
