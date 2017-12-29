@@ -129,6 +129,10 @@ def save(model, epoch=0, prefix='', filename=None):
 
 
 def run():
+    """
+    Generate and train the model and save it.
+    :return: None.
+    """
     print('Loading training data...')
     train_loader = DataLoader(SignData(P.train_data,
                                        P.frame_skip,

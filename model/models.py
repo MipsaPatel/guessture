@@ -7,13 +7,13 @@ class NeuralNet(nn.Module):
     The neural network being used.
     Layer       Parameters    Output size
     Input                   :  1 x 128 x 128
-    Convolution (1, 5, 5)   :  4 x 124 x 124
+    Convolution (1, 4, 5)   :  4 x 124 x 124
     MaxPool     (3, 3)      :  4 x  41 x  41
     ReLU                    :  4 x  41 x  41
-    Convolution (5, 10, 5)  : 16 x  37 x  37
+    Convolution (4, 16, 5)  : 16 x  37 x  37
     MaxPool     (3, 3)      : 16 x  12 x  12
     ReLU                    : 16 x  12 x  12
-    Convolution (10, 16, 5) : 64 x   8 x   8
+    Convolution (16, 64, 5) : 64 x   8 x   8
     MaxPool     (4, 4)      : 64 x   2 x   2
     ReLU                    : 64 x   2 x   2
              reshape        :  1 x 256
